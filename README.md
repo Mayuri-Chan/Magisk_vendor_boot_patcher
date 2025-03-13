@@ -11,12 +11,14 @@ Options
 --help: Show this help message and exit.
 --no-verity: Disable verity.
 --no-forceencrypt: Disable forceencrypt.
---patch-vbmeta-flag: Patch vbmeta flag.
---target-arch <arch>: Specify target arch (x86, x86_64, arm, arm64). Default is the same as host arch. This is useful when patching vendor boot image for a different device.
+--target-arch <arch>: Specify target arch (x86, x86_64, arm, arm64).
+                      Default is the same as host arch.
+                      This is useful when patching vendor boot image for a different device.
 ```
 
 ## Example
-### Termux
+### Termux (Recommended)
+> ⚠️ Playstore version of termux is not supported
 ```bash
 ./patch.sh vendor_boot_OS2.0.1.0.VNQIDXM.img
 ```

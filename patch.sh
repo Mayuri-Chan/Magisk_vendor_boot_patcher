@@ -3,8 +3,6 @@
 KEEPVERITY=true
 KEEPFORCEENCRYPT=true
 RECOVERYMODE=false
-LEGACYSAR=false
-PATCHVBMETAFLAG=false
 HOST_ARCH=$(uname -m)
 CURRENT_DEVICE=true
 
@@ -14,7 +12,6 @@ show_help() {
     echo "  --help                  Show this help message and exit"
     echo "  --no-verity             Disable verity"
     echo "  --no-forceencrypt       Disable forceencrypt"
-    echo "  --patch-vbmeta-flag     Patch vbmeta flag"
     echo "  --target-arch <arch>    Specify target arch (x86, x86_64, arm, arm64)"
     echo "                          Default is the same as host arch"
     echo "                          This is useful when patching vendor boot image for a different device"
@@ -45,10 +42,6 @@ while [[ $# -gt 0 ]]; do
             ;;
         --no-forceencrypt)
             KEEPFORCEENCRYPT=false
-            shift
-            ;;
-        --patch-vbmeta-flag)
-            PATCHVBMETAFLAG=true
             shift
             ;;
         --target-arch)
@@ -195,9 +188,10 @@ echo ""
 echo "Writing config..."
 echo "KEEPVERITY=$KEEPVERITY" > config
 echo "KEEPFORCEENCRYPT=$KEEPFORCEENCRYPT" >> config
-echo "PATCHVBMETAFLAG=$PATCHVBMETAFLAG" >> config
 if [[ $CURRENT_DEVICE == true ]]; then
+    echo "RECOVERYMODE=$RECOVERYMODE" >> config
     PREINITDEVICE=$(./magisk --preinit-device)
+    echo "Pre-init storage partition: $PREINITDEVICE"
     echo "PREINITDEVICE=$PREINITDEVICE" >> config
 fi
 echo "SHA1=$(./magiskboot sha1 $VENDORBOOT_IMG)" >> config
@@ -229,6 +223,19 @@ cp vendor_ramdisk/init_boot.cpio ramdisk.cpio.orig
 "add 000 .backup/.magisk config" > /dev/null 2>&1 \
 || { echo "Error: Failed to patch ramdisk"; exit 1; }
 cp ramdisk.cpio vendor_ramdisk/init_boot.cpio
+
+for dt in dtb kernel_dtb extra; do
+  if [ -f $dt ]; then
+    if ! ./magiskboot dtb $dt test; then
+      echo "! Boot image $dt was patched by old (unsupported) Magisk"
+      echo "! Please try again with *unpatched* boot image"
+      exit 1
+    fi
+    if ./magiskboot dtb $dt patch; then
+      echo "Patch fstab in boot image $dt"
+    fi
+  fi
+done
 
 echo ""
 echo "Repacking vendor boot image..."
